@@ -184,15 +184,15 @@ def go_to_goal (xgoal, ygoal):
         for i in range(len(distancias)):
             rectas = tortugas[indexCercanas[i]].calcRecta()
             #Checar si pendientes similares
-            print("newTortuga")
-            print("yo",[x,y,theta])
-            print("ella",[tortugas[indexCercanas[i]].x,tortugas[indexCercanas[i]].y,tortugas[indexCercanas[i]].theta])
-            print("mirecta",miRecta)
-            print("surecta",rectas)
-            print("mioposite",oppositeAngle(theta))
+            #print("newTortuga")
+            #print("yo",[x,y,theta])
+            #print("ella",[tortugas[indexCercanas[i]].x,tortugas[indexCercanas[i]].y,tortugas[indexCercanas[i]].theta])
+            #print("mirecta",miRecta)
+            #print("surecta",rectas)
+            #print("mioposite",oppositeAngle(theta))
             anguloTemp = np.arctan2((tortugas[indexCercanas[i]].y - y),(tortugas[indexCercanas[i]].x - x))
             anguloTemp -=theta
-            if tortugas[indexCercanas[i]].vel < 0.05 and iter > 1000 and anguloTemp + np.pi/2 > 0:
+            if tortugas[indexCercanas[i]].vel < 0.05 and iter > 1000 :
                 #print('estancada')
                 distObje = np.sqrt((tortugas[indexCercanas[i]].x - goal[0]) ** 2 + (tortugas[indexCercanas[i]].y - goal[1]) ** 2)
                 #print('Estancada',distObje,distancias[i])
@@ -213,6 +213,32 @@ def go_to_goal (xgoal, ygoal):
                     ygoal = newYGoal
                     otraEnPunto = True
                     iter = 0
+                else:
+                    #print("newTortuga")
+                    #print("yo",[x,y,theta])
+                    #print("ella",[tortugas[indexCercanas[i]].x,tortugas[indexCercanas[i]].y,tortugas[indexCercanas[i]].theta])
+                    #print("mirecta",miRecta)
+                    #print("surecta",rectas)
+                    #print("mioposite",oppositeAngle(theta))
+                    #print("Cerca de mi y estancada")
+                    yOtrarecta = miRecta[0] * tortugas[indexCercanas[i]].x + miRecta[1]
+                    if abs(tortugas[indexCercanas[i]].y - yOtrarecta) < radioTortuga:
+                        if not esquivando:
+                            esquivando = True
+                            if miRecta[2]:
+                                newRecta = [0,y,False]
+                            elif miRecta[0] == 0:
+                                newRecta = [0,x,True]
+                            else:
+                                newM = -1/miRecta[0]
+                                newRecta = [newM,y-newM*x,False]
+                            if not newRecta[2]:
+                                xgoal = radioTortuga * 3/2 * np.cos(np.arctan(newRecta[0])) + x
+                                ygoal = newRecta[0] * xgoal + newRecta[1]
+                                print('actual',x,y,'new',xgoal,ygoal)
+                                pasoEsquivo = 3
+                    
+                    
             elif not esquivando:
                 tempAngleCheck = inRange(oppositeAngle(theta),tortugas[indexCercanas[i]].theta,0.2) or inRange(theta,tortugas[indexCercanas[i]].theta,0.2) or inRange(oppositeAngle(theta),oppositeAngle(tortugas[indexCercanas[i]].theta),0.2)
                 if inRange(abs(miRecta[0]),abs(rectas[0]),0.2) and miRecta[2] == rectas[2] and inRange(anguloTemp,0,0.2): 
