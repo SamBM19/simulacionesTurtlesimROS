@@ -63,10 +63,12 @@ yAnt = 0
 
 radioTortuga = 1
 radioCerca = 3
-
+iter = 0
 seguida = False
 circulo = False
 cuadrado = False
+
+toleranciaBordes = 0.5
 
 tortugas = []
 
@@ -130,8 +132,9 @@ def getSign(x):
     except:
         return 0
 
-def getScenario(indexCercanas,goal,miRecta,linear_speed,rectas,anguloTemp,esquivando):
-    if tortugas[indexCercanas[i]].vel < 0.05 and iter > 1000 and anguloTemp + np.pi/2 > 0:
+def getScenario(indexCercanas,goal,miRecta,linear_speed,rectas,anguloTemp,esquivando,distancia):
+    global iter
+    if tortugas[indexCercanas[i]].vel < 0.05 and iter > 100 and anguloTemp + np.pi/2 > 0 and distancia < radioCerca:
         #print('estancada')
         distObje = np.sqrt((tortugas[indexCercanas[i]].x - goal[0]) ** 2 + (tortugas[indexCercanas[i]].y - goal[1]) ** 2)
         #print('Estancada',distObje,distancias[i])
@@ -141,7 +144,7 @@ def getScenario(indexCercanas,goal,miRecta,linear_speed,rectas,anguloTemp,esquiv
             
     elif not esquivando:
         tempAngleCheck = inRange(oppositeAngle(theta),tortugas[indexCercanas[i]].theta,0.2) or inRange(theta,tortugas[indexCercanas[i]].theta,0.2) or inRange(oppositeAngle(theta),oppositeAngle(tortugas[indexCercanas[i]].theta),0.2)
-        if inRange(abs(miRecta[0]),abs(rectas[0]),0.2) and miRecta[2] == rectas[2] and inRange(anguloTemp,0,0.2): 
+        if inRange(abs(miRecta[0]),abs(rectas[0]),0.2) and miRecta[2] == rectas[2]: 
             print("lol",abs(abs(miRecta[1]) - abs(rectas[1])))
             if abs(abs(miRecta[1]) - abs(rectas[1])) < radioTortuga * 2:
                 
@@ -169,13 +172,14 @@ def getScenario(indexCercanas,goal,miRecta,linear_speed,rectas,anguloTemp,esquiv
             #(b2 - b1) / (m1 - m2) = x
             #y = m1 x + b1
             try:
+                print(miRecta,rectas)
                 xChoque = (miRecta[1]-rectas[1])/(rectas[0] - miRecta[0])
                 yChoque = miRecta[0] * xChoque + miRecta[1]
             except:
                 if inRange(abs(theta),np.pi/2,0.1): #Estoy vertical
                     xChoque = miRecta[1]
                     yChoque = rectas[0] * xChoque + rectas[1]
-                elif  inRange(abs(tortugas[indexCercanas[i]].theta),np.pi/2,0.1): #Esta en vertical
+                elif inRange(abs(tortugas[indexCercanas[i]].theta),np.pi/2,0.1): #Esta en vertical
                     xChoque = rectas[1]
                     yChoque = miRecta[0] * xChoque + miRecta[1]
             print("No paralelas")
@@ -205,16 +209,16 @@ def go_to_goal (xgoal, ygoal):
     global x
     global y
     global theta
+    global iter
 
     velocity_message = Twist()
     cmd_vel_topic = '/turtle1/cmd_vel'
     pastTheta = theta
     tempBool = False
     esquivando = False
-    iter = 0
+    
     pasoEsquivo = 0
-    coordenadasPaso2 = [0,0]
-    coordenadasPaso3 = [0,0]
+    puntosEsquivar = []
     linear_speed = 0
     goal = [xgoal, ygoal]
     while(True):
@@ -230,7 +234,7 @@ def go_to_goal (xgoal, ygoal):
             else:
                 dtheta = (abs(dtheta) - np.pi)  
                 
-            print('dtheta new',dtheta)
+            #print('dtheta new',dtheta)
         angular_speed = ka * (dtheta)
         if(abs(dtheta) > 0.5):
             kv = 0.1
@@ -256,15 +260,17 @@ def go_to_goal (xgoal, ygoal):
         for i in range(len(distancias)):
             rectas = tortugas[indexCercanas[i]].calcRecta()
             #Checar si pendientes similares
+            '''
             print("newTortuga")
             print("yo",[x,y,theta])
             print("ella",[tortugas[indexCercanas[i]].x,tortugas[indexCercanas[i]].y,tortugas[indexCercanas[i]].theta])
             print("mirecta",miRecta)
             print("surecta",rectas)
             print("mioposite",oppositeAngle(theta))
+            '''
             anguloTemp = np.arctan2((tortugas[indexCercanas[i]].y - y),(tortugas[indexCercanas[i]].x - x))
             anguloTemp -=theta
-            escenario = getScenario(indexCercanas,goal,miRecta,linear_speed,rectas,anguloTemp,esquivando)
+            escenario = getScenario(indexCercanas,goal,miRecta,linear_speed,rectas,anguloTemp,esquivando,distancias[i])
             if escenario == 0:
                 if miRecta[2]:
                     newYGoal = ygoal - radioTortuga * np.sin(theta)
@@ -288,24 +294,49 @@ def go_to_goal (xgoal, ygoal):
                 print("2")
             elif escenario == 3:
                 esquivando = True
-                if abs(anguloTemp + np.pi/2) <= np.pi/2:
-                    #Derecha
-                    xgoal = x + np.cos(theta) * radioCerca /2 + np.sin(theta) * radioTortuga * 2
-                    ygoal = y + np.sin(theta) * radioCerca /2 + np.cos(theta) * radioTortuga * 2
-                    
-                else:
-                    xgoal = x + np.cos(theta) * radioCerca /2 - np.sin(theta) * radioTortuga * 2
-                    ygoal = y + np.sin(theta) * radioCerca /2 - np.cos(theta) * radioTortuga * 2
+                '''
+                Sacar recta normal que pase por nuestro punto
+                Moverse radio por ahi
+                Sacar recta paralela a la original que pase por el munto de arriba y se mueva radio2
+                Regresar a mi recta
+                '''
+
+                radioNuevoCirculo = distancias[i]
+                #Sacar recta normal
                 if not miRecta[2]:
-                    newX = x + 3/2 * radioCerca * np.cos(theta) + radioTortuga * np.sin(theta)
-                    newY = miRecta[0] * newX + miRecta[1]
+                    try:
+                        newM = -1/miRecta[0]
+                        newRecta = [newM,y - newM * x,miRecta[2]]
+                    except:
+                        newRecta = [0,x,True]
                 else:
-                    newY = x + 3/2 * radioCerca * np.cos(theta) + radioTortuga * np.sin(theta)
-                    newX = miRecta[0] * newY + miRecta[1]
-                coordenadasPaso2 = [xgoal + 1 * radioCerca /4 * np.cos(theta), ygoal + 1 * radioCerca /4 * np.sin(theta)]
-                coordenadasPaso3 = [newX,newY]
-                print("coor2",coordenadasPaso2)
-                print("coor3",coordenadasPaso3)
+                    newRecta = [0,y,False]
+                if newRecta[2]:
+                    angleNewRecta = np.pi/2
+                else:
+                    angleNewRecta = np.arctan(newRecta[0])
+                if not newRecta[2]:
+                    distX = np.cos(angleNewRecta) * radioTortuga * 3/2
+                    newX = x + distX
+                    newY = newX * newRecta[0]
+                else:
+                    newX = x
+                    newY = y + radioTortuga * 3/2
+                reintentar = newX > 11 - toleranciaBordes and newY > 11 - toleranciaBordes
+
+                if reintentar:
+                    if not newRecta[2]:
+                        distX = np.cos(angleNewRecta) * radioTortuga * 3/2
+                        newX = x - distX
+                        newY = newX * newRecta[0]
+                    else:
+                        newX = x
+                        newY = y - radioTortuga * 3/2
+                puntosEsquivar.append([newX,newY])
+
+
+                    
+                
             elif escenario == 4:
                 print("Atras de mi")
                 linear_speed = linear_speed * 3 /2
@@ -419,20 +450,20 @@ def go_to_goal (xgoal, ygoal):
                     
                     if pasoEsquivo == 0:
                         #moverse en y nada mas
-                        xgoal = coordenadasPaso2[0]
-                        ygoal = coordenadasPaso2[1]
+                        xgoal = puntosEsquivar[0][0]
+                        ygoal = puntosEsquivar[0][1]
                         pasoEsquivo += 1
-                    elif pasoEsquivo == 1:
-                        xgoal = coordenadasPaso3[0]
-                        ygoal = coordenadasPaso3[1]
-                        pasoEsquivo += 1
+                    
                     else:
                         xgoal = goal[0]
                         ygoal = goal[1]
                         pasoEsquivo = 0  
                         esquivando = False
                     '''
-                    
+                    elif pasoEsquivo == 1:
+                        xgoal = coordenadasPaso3[0]
+                        ygoal = coordenadasPaso3[1]
+                        pasoEsquivo += 1
                     '''
                     
 def stop():
