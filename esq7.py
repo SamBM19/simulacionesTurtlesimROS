@@ -385,11 +385,17 @@ def go_to_goal (xgoal, ygoal):
                             tOtra = 100000
                         tMia = distPuntoMio / linear_speed
                         if tOtra <= tMia:
-                            print("La otra llega antes")
-                            linear_speed = 0
+                            print("La otra llega antes",distancias[i])
+                            if distancias[i] < radioTortuga*1.5:
+                                linear_speed = -linear_speed 
+                            else:
+                                linear_speed = 0
                         elif tMia < tOtra:
                             print("LLego antes")
-                            linear_speed = 0
+                            if distancias[i] < radioTortuga*1.5:
+                                linear_speed = -linear_speed 
+                            else:
+                                linear_speed = 0
                             #linear_speed =+ radioCerca / distancias[indexCercanas[i]] * 10
                 
 
@@ -435,44 +441,7 @@ def go_to_goal (xgoal, ygoal):
             '''
 
 
-            '''
-            if not esquivando:
-                lastCoordenada = [xgoal,ygoal]
-                #Definir si el otro va en la misma direccion pero otro sentido
-                tolerance = 0.1
-                print('theta',theta)
-                print('theta2',theta2)
-                print("opTheta", oppositeAngle(theta))
-                if inRange(theta,oppositeAngle(theta)):
-                    #definir vertical horizontal o digonal
-                    #Vertical
-                    print("Ruta col")
-                    esquivando = True
-                    
-                    if inRange(np.pi/2,theta):
-                        print("pi/2") #vel angular
-                        xgoal = x 
-                        ygoal = y + 2 *abs(y2-y)/5
-                        coordenadasPaso2 = [xgoal+1, ygoal+1]
-                        coordenadasPaso3 = [x+1,y + 2 *abs(y2-y)/6 + 1]
-                    elif inRange(-np.pi /2,theta):
-                        print("-pi/2") #vel angular
-                        xgoal = x + 1.5
-                        ygoal = y - 2 *abs(y2-y)/5
-                        coordenadasPaso2 = [xgoal, ygoal - 1]
-                        coordenadasPaso3 = [x,y - 2 *abs(y2-y)/5 - 3]
-                    #Horizontal  checar
-                    elif inRange(0,theta):
-                        xgoal = x + 2 *abs(x2-x)/5
-                        ygoal = y + 1.5
-                        coordenadasPaso2 = [xgoal + 1, ygoal]
-                        coordenadasPaso3 = [x+ 2 *abs(x2-x)/5 + 3,y]
-                    elif inRange(np.pi,theta) or inRange(-np.pi,theta):
-                        xgoal = x - 2 *abs(x2-x)/5
-                        ygoal = y + 1.5
-                        coordenadasPaso2 = [xgoal - 1, ygoal]
-                        coordenadasPaso3 = [x - 2 *abs(x2-x)/5 - 3,y]
-            '''
+            
         velocity_message.linear.x = linear_speed
         velocity_message.angular.z = angular_speed
         velocity_publisher.publish(velocity_message)
@@ -522,11 +491,12 @@ if __name__ == '__main__':
         position_topic = "/turtle1/pose"
         pose_subscriber = rospy.Subscriber(position_topic, Pose, poseCallback)
         tortugas.append(turtleWatcher('turtle2'))
+        tortugas.append(turtleWatcher('turtle3'))
         
         time.sleep(2)     
         delayTime = 1.0
         initPos = [5.5,1.0]
-        pos = [[10.0,10.0]]
+        pos = [[5.5,10.0],[5.5,1.0]]
 
         for i in range(len(pos)):
             print(pos[i][0],"\t",pos[i][1])
