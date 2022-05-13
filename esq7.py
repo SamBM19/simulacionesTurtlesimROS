@@ -392,8 +392,13 @@ def go_to_goal (xgoal, ygoal):
                                 linear_speed = 0
                         elif tMia < tOtra:
                             print("LLego antes")
-                            if distancias[i] < radioTortuga*1.5:
-                                linear_speed = -linear_speed 
+                            if distancias[i] < radioTortuga*1.5 and anguloTemp + np.pi/2 > 0:
+                                ningunaAtras = False
+                                for otras in indexCercanas:
+                                    anguloOtras =np.arctan2((tortugas[otras].y - y),(tortugas[otras].x - x)) - theta + np.pi/2
+                                    ningunaAtras =  ningunaAtras or anguloOtras < 0 
+                                if not ningunaAtras:
+                                    linear_speed = -linear_speed 
                             else:
                                 linear_speed = 0
                             #linear_speed =+ radioCerca / distancias[indexCercanas[i]] * 10
