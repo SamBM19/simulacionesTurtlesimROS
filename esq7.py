@@ -170,16 +170,25 @@ def go_to_goal (xgoal, ygoal):
         ka = 4.0
         desired_angle_goal = math.atan2(ygoal-y, xgoal-x)
         
+        print("Data",[xgoal,ygoal],[x,y])
+        print("Original",theta,desired_angle_goal)
         if getSign(theta) != getSign(desired_angle_goal):
             if abs(abs(theta)-abs(desired_angle_goal)) > np.pi:
-                print("Data",[xgoal,ygoal],[x,y])
-                print("Original",theta,desired_angle_goal)
                 if getSign(theta) < 0:
                     theta = np.pi*2 + theta
                 else:
                     desired_angle_goal = np.pi*2 + desired_angle_goal
                 print("mod",theta,desired_angle_goal)
         dtheta = desired_angle_goal-theta
+        
+        #dtheta = desired_angle_goal-theta
+        if abs(dtheta) > np.pi:
+            if inRange(abs(dtheta),2 * np.pi,0.1):
+                dtheta = (abs(dtheta) - 2 * np.pi)  
+            else:
+                dtheta = (abs(dtheta) - np.pi)  
+                
+            print('dtheta new',dtheta)
         angular_speed = ka * (dtheta)
         if(abs(dtheta) > 0.5):
             kv = 0.1
@@ -271,7 +280,7 @@ def go_to_goal (xgoal, ygoal):
                                 newM = -1/miRecta[0]
                                 newRecta = [newM,y-newM*x,False]
                             if not newRecta[2]:
-                                xgoal = radioTortuga * 4/2 * np.cos(np.arctan(newRecta[0])) + x
+                                xgoal = x + radioTortuga * 4/2 * np.cos(np.arctan(newRecta[0])) 
                                 ygoal = newRecta[0] * xgoal + newRecta[1]
                             
                                 if xgoal > 10.5 or ygoal > 10.5 or ygoal < 0.5:
@@ -283,7 +292,27 @@ def go_to_goal (xgoal, ygoal):
                                     xgoal = abs(xgoal)
                                     ygoal = abs(ygoal)
                                 #print('actual',x,y,'new',xgoal,ygoal)
-                                pasoEsquivo = 3
+                                if distance > 2.5* radioTortuga:
+                                    if miRecta[2]:
+                                        xOtroPunto = x
+                                        yOtroPunto = y + 2.5*radioTortuga + (tortugas[indexCercanas[i]].y-y)
+                                    else:
+                                        xOtroPunto = x + 2.5*radioTortuga * np.cos(theta) + (tortugas[indexCercanas[i]].x-x)
+                                        yOtroPunto = miRecta[0] * xOtroPunto + miRecta[1]
+                                    coordenadasPaso3 = [xOtroPunto,yOtroPunto]
+                                    '''
+                                    paralela = [miRecta[0],ygoal - miRecta[0] * xgoal,miRecta[2]]
+                                    if paralela[2]:
+                                        xOtroPunto2 = xOtroPunto
+                                        yOtroPunto2 = y + 2.5*radioTortuga + (tortugas[indexCercanas[i]].y-y)
+                                    else:
+                                        xOtroPunto2 = xgoal + 2.5*radioTortuga * np.cos(theta) + (tortugas[indexCercanas[i]].x-x)
+                                        yOtroPunto2 = paralela[0] * xOtroPunto2 + paralela[1]
+                                    coordenadasPaso2 = [xOtroPunto2,yOtroPunto2]
+                                    '''
+                                    pasoEsquivo = 3
+                                else:
+                                    pasoEsquivo = 3
                             else:
                                 #print('lol?')
                                 xgoal = radioTortuga * 4/2 * np.cos(np.arctan(newRecta[0])) + x
@@ -525,7 +554,7 @@ def go_to_goal (xgoal, ygoal):
                 if (distance < 0.01):
                     break
             else:
-                if (distance < 0.1):
+                if (distance < 0.2):
                     #print("arrived")
                     
                     if pasoEsquivo == 0:
@@ -536,12 +565,14 @@ def go_to_goal (xgoal, ygoal):
                     elif pasoEsquivo == 1:
                         xgoal = coordenadasPaso3[0]
                         ygoal = coordenadasPaso3[1]
+                        
                         pasoEsquivo += 1
                     else:
                         xgoal = goal[0]
                         ygoal = goal[1]
                         pasoEsquivo = 0  
                         esquivando = False
+                    orientate(xgoal,ygoal)
                     '''
                     
                     '''
