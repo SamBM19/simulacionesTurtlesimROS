@@ -135,9 +135,7 @@ def go_to_goal (xgoal, ygoal):
     global theta
 
     velocity_message = Twist()
-    cmd_vel_topic = '/turtle1/cmd_vel'
-    pastTheta = theta
-    tempBool = False
+    
     esquivando = False
     goalUpdate = False
     iter = 0
@@ -145,6 +143,16 @@ def go_to_goal (xgoal, ygoal):
     coordenadasPaso2 = [0,0]
     coordenadasPaso3 = [0,0]
     linear_speed = 0
+
+    borderLimit = 0.5
+    if xgoal < borderLimit:
+        xgoal = borderLimit
+    elif xgoal > 11-borderLimit:
+        xgoal = 11-borderLimit
+    if ygoal < borderLimit:
+        ygoal = borderLimit
+    elif ygoal > 11-borderLimit:
+        ygoal = 11-borderLimit
     goal = [xgoal, ygoal]
     while(True):
         
@@ -239,7 +247,7 @@ def go_to_goal (xgoal, ygoal):
                         yOtrarecta = miRecta[0] * tortugas[indexCercanas[i]].x + miRecta[1]
                     
                     print('esuivar test',yOtrarecta,tortugas[indexCercanas[i]].y,abs(tortugas[indexCercanas[i]].y - yOtrarecta))
-                    if abs(tortugas[indexCercanas[i]].y - yOtrarecta) < radioTortuga * 2:
+                    if abs(tortugas[indexCercanas[i]].y - yOtrarecta) < radioTortuga and anguloTemp + np.pi/2 > 0:
                         print(esquivando)
                         if not esquivando:
                             esquivando = True
@@ -357,8 +365,15 @@ def go_to_goal (xgoal, ygoal):
                     #(b2 - b1) / (m1 - m2) = x
                     #y = m1 x + b1
                     try:
-                        xChoque = (miRecta[1]-rectas[1])/(rectas[0] - miRecta[0])
-                        yChoque = miRecta[0] * xChoque + miRecta[1]
+                        if miRecta[2]:
+                            xChoque = miRecta[1]
+                            yChoque = rectas[0] * xChoque + rectas[1]
+                        elif rectas[2]:
+                            xChoque = rectas[1]
+                            yChoque = miRecta[0] * xChoque + miRecta[1]
+                        else:
+                            xChoque = (miRecta[1]-rectas[1])/(rectas[0] - miRecta[0])
+                            yChoque = miRecta[0] * xChoque + miRecta[1]
                     except:
                         if inRange(abs(theta),np.pi/2,0.1): #Estoy vertical
                             xChoque = miRecta[1]
@@ -367,8 +382,15 @@ def go_to_goal (xgoal, ygoal):
                             xChoque = rectas[1]
                             yChoque = miRecta[0] * xChoque + miRecta[1]
                     print("No paralelas")
-                        
                     
+                    print("newTortuga",i)
+                    print("yo",[x,y,theta])
+                    print("ella",[tortugas[indexCercanas[i]].x,tortugas[indexCercanas[i]].y,tortugas[indexCercanas[i]].theta])
+                    print("mirecta",miRecta)
+                    print("surecta",rectas)
+                    print("Choque",xChoque,yChoque)
+                    print("mioposite",oppositeAngle(theta))
+        
                     if np.arctan2(yChoque - y,xChoque - x) - theta + np.pi < 0:
                         print("Atras de mi")
                         linear_speed = linear_speed * 3 /2
@@ -379,34 +401,46 @@ def go_to_goal (xgoal, ygoal):
                         
                         distPuntoOtra = np.sqrt((xChoque - tortugas[indexCercanas[i]].x)**2 +(yChoque - tortugas[indexCercanas[i]].y)**2)
                         distPuntoMio = np.sqrt((xChoque - x)**2 +(yChoque - y)**2)
-                        if tortugas[indexCercanas[i]].vel != 0:
-                            tOtra = distPuntoOtra / tortugas[indexCercanas[i]].vel
-                        else:
-                            tOtra = 100000
-                        tMia = distPuntoMio / linear_speed
-                        if tOtra <= tMia:
-                            print("La otra llega antes",distancias[i])
-                            if distancias[i] < radioTortuga*1.5:
-                                linear_speed = -linear_speed 
-                            else:
-                                linear_speed = 0
-                        elif tMia < tOtra:
+                        if distPuntoMio < radioCerca:
                             print("LLego antes")
-                            if distancias[i] < radioTortuga*1.5 and anguloTemp + np.pi/2 > 0:
-                                ningunaAtras = False
-                                for otras in indexCercanas:
-                                    anguloOtras =np.arctan2((tortugas[otras].y - y),(tortugas[otras].x - x)) - theta + np.pi/2
-                                    ningunaAtras =  ningunaAtras or anguloOtras < 0 
-                                if not ningunaAtras:
-                                    linear_speed = -linear_speed 
+                            if tortugas[indexCercanas[i]].vel != 0:
+                                tOtra = distPuntoOtra / tortugas[indexCercanas[i]].vel
                             else:
-                                linear_speed = 0
-                            #linear_speed =+ radioCerca / distancias[indexCercanas[i]] * 10
+                                tOtra = 100000
+                            tMia = distPuntoMio / linear_speed
+                            '''
+                            if tOtra <= tMia:
+                                tChoque = tOtra
+                                otraPos = 
+                            else:
+                                tChoque = tMia
+                            '''
+                            if tOtra <= tMia:
+                                print("La otra llega antes",distancias[i])
+                                if distancias[i] < radioTortuga*1.5:
+                                    linear_speed = -linear_speed 
+                                else:
+                                    linear_speed = 0
+                            elif tMia < tOtra:
+                                
+                                
+                                if distancias[i] < radioTortuga*1.5:
+                                    otraAtras = False
+                                    for p in range(len(distancias)):
+                                        if p != i:
+                                            angleOther = np.arctan2((tortugas[indexCercanas[i]].y - y),(tortugas[indexCercanas[i]].x - x)) -theta + np.pi/2
+                                            otraAtras = otraAtras or angleOther < 0
+                                    if otraAtras:
+                                        linear_speed = 0
+                                    else:
+                                        linear_speed = -linear_speed /2
+                                else:
+                                    linear_speed = 0
+                                #linear_speed =+ radioCerca / distancias[indexCercanas[i]] * 10
                 
 
             '''
-            linear_speed = -1/5 * linear_speed
-            angular_speed = 0.0
+            
             
             contansteente calcular vel todas tortugas ok
             calcular quienes estan en mi radio ok
@@ -445,8 +479,26 @@ def go_to_goal (xgoal, ygoal):
             0 -pi/2  calcular su vel
             '''
 
-
-            
+        if xgoal < borderLimit:
+            xgoal = borderLimit
+        elif xgoal > 11-borderLimit:
+            xgoal = 11-borderLimit
+        if xgoal < borderLimit:
+            ygoal = borderLimit
+        elif xgoal > 11-borderLimit:
+            ygoal = 11-borderLimit
+        if x < 0.25:
+            if abs(theta) > np.pi/2:
+                linear_speed = 0
+        elif x > 10.75:
+            if abs(theta) < np.pi/2:
+                linear_speed = 0
+        if y < 0.25:
+            if theta < 0:
+                linear_speed = 0
+        elif y > 10.75:
+            if theta > 0:
+                linear_speed = 0
         velocity_message.linear.x = linear_speed
         velocity_message.angular.z = angular_speed
         velocity_publisher.publish(velocity_message)
@@ -501,7 +553,7 @@ if __name__ == '__main__':
         time.sleep(2)     
         delayTime = 1.0
         initPos = [5.5,1.0]
-        pos = [[5.5,10.0],[5.5,1.0]]
+        pos = [[10.0,3.0],[1.0,7.0],[9.0,10.0]]
 
         for i in range(len(pos)):
             print(pos[i][0],"\t",pos[i][1])
