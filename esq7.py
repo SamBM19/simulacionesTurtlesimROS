@@ -45,7 +45,7 @@ class turtleWatcher:
             m = (self.yAnt - self.y) / (self.xAnt - self.x)
             b = self.y - m * self.x
         except:
-            print("vertical")
+            #print("vertical")
             vert = True
             m = 0
             b = x
@@ -62,7 +62,7 @@ xAnt = 0
 yAnt = 0
 
 radioTortuga = 1
-radioCerca = 3
+radioCerca = 2
 
 seguida = False
 circulo = False
@@ -106,15 +106,25 @@ def orientate (xgoal, ygoal):
     while(True):
         ka = 4.0
         desired_angle_goal = math.atan2(ygoal-y, xgoal-x)
-        dtheta = desired_angle_goal-theta        
+        
+        if getSign(theta) != getSign(desired_angle_goal):
+            if getSign(theta) < 0:
+                theta = np.pi*2 + theta
+            else:
+                desired_angle_goal = np.pi*2 + desired_angle_goal
+            
+        dtheta = desired_angle_goal-theta
         angular_speed = ka * (dtheta)
         velocity_message.linear.x = 0.0
         velocity_message.angular.z = angular_speed
         velocity_publisher.publish(velocity_message)
-       #print ('x=', x, 'y=', y)
+       ##print ('x=', x, 'y=', y)
 
         if (dtheta < 0.01):
             break
+    velocity_message.linear.x = 0.0
+    velocity_message.angular.z = 0.0
+    velocity_publisher.publish(velocity_message)
 def inRange(x,x2,tolerance):
     return x2 - tolerance < x and x2 + tolerance > x   # cambie and por or
 
@@ -135,9 +145,7 @@ def go_to_goal (xgoal, ygoal):
     global theta
 
     velocity_message = Twist()
-    cmd_vel_topic = '/turtle1/cmd_vel'
-    pastTheta = theta
-    tempBool = False
+    
     esquivando = False
     goalUpdate = False
     iter = 0
@@ -145,16 +153,37 @@ def go_to_goal (xgoal, ygoal):
     coordenadasPaso2 = [0,0]
     coordenadasPaso3 = [0,0]
     linear_speed = 0
+
+    borderLimit = 0.5
+    if xgoal < borderLimit:
+        xgoal = borderLimit
+    elif xgoal > 11-borderLimit:
+        xgoal = 11-borderLimit
+    if ygoal < borderLimit:
+        ygoal = borderLimit
+    elif ygoal > 11-borderLimit:
+        ygoal = 11-borderLimit
     goal = [xgoal, ygoal]
     while(True):
         
         iter +=1
         ka = 4.0
         desired_angle_goal = math.atan2(ygoal-y, xgoal-x)
+        
+        print("Data",[xgoal,ygoal],[x,y])
+        print("Original",theta,desired_angle_goal)
+        if getSign(theta) != getSign(desired_angle_goal):
+            if abs(abs(theta)-abs(desired_angle_goal)) > np.pi:
+                if getSign(theta) < 0:
+                    theta = np.pi*2 + theta
+                else:
+                    desired_angle_goal = np.pi*2 + desired_angle_goal
+                print("mod",theta,desired_angle_goal)
         dtheta = desired_angle_goal-theta
+        
+        #dtheta = desired_angle_goal-theta
         if abs(dtheta) > np.pi:
             if inRange(abs(dtheta),2 * np.pi,0.1):
-                
                 dtheta = (abs(dtheta) - 2 * np.pi)  
             else:
                 dtheta = (abs(dtheta) - np.pi)  
@@ -185,12 +214,12 @@ def go_to_goal (xgoal, ygoal):
         for i in range(len(distancias)):
             rectas = tortugas[indexCercanas[i]].calcRecta()
             #Checar si pendientes similares
-            #print("newTortuga")
-            #print("yo",[x,y,theta])
-            #print("ella",[tortugas[indexCercanas[i]].x,tortugas[indexCercanas[i]].y,tortugas[indexCercanas[i]].theta])
-            #print("mirecta",miRecta)
-            #print("surecta",rectas)
-            #print("mioposite",oppositeAngle(theta))
+            ##print("newTortuga")
+            ##print("yo",[x,y,theta])
+            ##print("ella",[tortugas[indexCercanas[i]].x,tortugas[indexCercanas[i]].y,tortugas[indexCercanas[i]].theta])
+            ##print("mirecta",miRecta)
+            ##print("surecta",rectas)
+            ##print("mioposite",oppositeAngle(theta))
             anguloTemp = np.arctan2((tortugas[indexCercanas[i]].y - y),(tortugas[indexCercanas[i]].x - x))
             anguloTemp -=theta
             distObje = np.sqrt((tortugas[indexCercanas[i]].x - goal[0]) ** 2 + (tortugas[indexCercanas[i]].y - goal[1]) ** 2)
@@ -200,14 +229,14 @@ def go_to_goal (xgoal, ygoal):
                 goalUpdate = False
             
             if tortugas[indexCercanas[i]].vel < 0.05 and iter > 1000 :
-                #print('estancada')
+                ##print('estancada')
                 
                 
-                print('Estancada',distObje,distancias[i])
+                #print('Estancada',distObje,distancias[i])
                 if abs(distObje) <= radioTortuga:
                     
                     if not goalUpdate:
-                        print('Cambiar goal')
+                        #print('Cambiar goal')
                         #Obtener el punto en mi recta que este a dos radio tortuga de mi objetivo
                         if miRecta[2]:
                             newYGoal = ygoal - radioTortuga * np.sin(theta) * 3/2
@@ -217,8 +246,8 @@ def go_to_goal (xgoal, ygoal):
                             newYGoal = miRecta[0] * newXGoal + miRecta[1]
                         
                         ignorarCaso = True
-                        print("yo",[x,y,theta])
-                        print('newGoal\n\n\n\n\n\n\n\n\n\n\n\n\n\n',[newXGoal,newYGoal])
+                        #print("yo",[x,y,theta])
+                        #print('newGoal\n\n\n\n\n\n\n\n\n\n\n\n\n\n',[newXGoal,newYGoal])
                         xgoal = newXGoal
                         ygoal = newYGoal
                         otraEnPunto = True
@@ -226,21 +255,21 @@ def go_to_goal (xgoal, ygoal):
                         goalUpdate = True
                 
                 else:
-                    #print("newTortuga")
-                    #print("yo",[x,y,theta])
-                    #print("ella",[tortugas[indexCercanas[i]].x,tortugas[indexCercanas[i]].y,tortugas[indexCercanas[i]].theta])
-                    #print("mirecta",miRecta)
-                    #print("surecta",rectas)
-                    #print("mioposite",oppositeAngle(theta))
-                    #print("Cerca de mi y estancada")
+                    ##print("newTortuga")
+                    ##print("yo",[x,y,theta])
+                    ##print("ella",[tortugas[indexCercanas[i]].x,tortugas[indexCercanas[i]].y,tortugas[indexCercanas[i]].theta])
+                    ##print("mirecta",miRecta)
+                    ##print("surecta",rectas)
+                    ##print("mioposite",oppositeAngle(theta))
+                    ##print("Cerca de mi y estancada")
                     if miRecta[2]:
                         yOtrarecta = tortugas[indexCercanas[i]].y
                     else:
                         yOtrarecta = miRecta[0] * tortugas[indexCercanas[i]].x + miRecta[1]
                     
-                    print('esuivar test',yOtrarecta,tortugas[indexCercanas[i]].y,abs(tortugas[indexCercanas[i]].y - yOtrarecta))
-                    if abs(tortugas[indexCercanas[i]].y - yOtrarecta) < radioTortuga * 2:
-                        print(esquivando)
+                    #print('esuivar test',yOtrarecta,tortugas[indexCercanas[i]].y,abs(tortugas[indexCercanas[i]].y - yOtrarecta))
+                    if abs(tortugas[indexCercanas[i]].y - yOtrarecta) < radioTortuga and anguloTemp + np.pi/2 > 0:
+                        #print(esquivando)
                         if not esquivando:
                             esquivando = True
                             if miRecta[2]:
@@ -251,21 +280,41 @@ def go_to_goal (xgoal, ygoal):
                                 newM = -1/miRecta[0]
                                 newRecta = [newM,y-newM*x,False]
                             if not newRecta[2]:
-                                xgoal = radioTortuga * 4/2 * np.cos(np.arctan(newRecta[0])) + x
+                                xgoal = x + radioTortuga * 4/2 * np.cos(np.arctan(newRecta[0])) 
                                 ygoal = newRecta[0] * xgoal + newRecta[1]
                             
                                 if xgoal > 10.5 or ygoal > 10.5 or ygoal < 0.5:
                                     #time.sleep(1.0)
-                                    print(newRecta)
+                                    #print(newRecta)
                                     xgoal = x - radioTortuga * 4/2 * np.cos(np.arctan(newRecta[0]))
                                     ygoal = newRecta[0] * xgoal + newRecta[1]
                                 if xgoal > 10.5 or xgoal < 0.5 or ygoal > 10.5 or ygoal < 0.5:
                                     xgoal = abs(xgoal)
                                     ygoal = abs(ygoal)
-                                print('actual',x,y,'new',xgoal,ygoal)
-                                pasoEsquivo = 3
+                                #print('actual',x,y,'new',xgoal,ygoal)
+                                if distance > 2.5* radioTortuga:
+                                    if miRecta[2]:
+                                        xOtroPunto = x
+                                        yOtroPunto = y + 2.5*radioTortuga + (tortugas[indexCercanas[i]].y-y)
+                                    else:
+                                        xOtroPunto = x + 2.5*radioTortuga * np.cos(theta) + (tortugas[indexCercanas[i]].x-x)
+                                        yOtroPunto = miRecta[0] * xOtroPunto + miRecta[1]
+                                    coordenadasPaso3 = [xOtroPunto,yOtroPunto]
+                                    '''
+                                    paralela = [miRecta[0],ygoal - miRecta[0] * xgoal,miRecta[2]]
+                                    if paralela[2]:
+                                        xOtroPunto2 = xOtroPunto
+                                        yOtroPunto2 = y + 2.5*radioTortuga + (tortugas[indexCercanas[i]].y-y)
+                                    else:
+                                        xOtroPunto2 = xgoal + 2.5*radioTortuga * np.cos(theta) + (tortugas[indexCercanas[i]].x-x)
+                                        yOtroPunto2 = paralela[0] * xOtroPunto2 + paralela[1]
+                                    coordenadasPaso2 = [xOtroPunto2,yOtroPunto2]
+                                    '''
+                                    pasoEsquivo = 3
+                                else:
+                                    pasoEsquivo = 3
                             else:
-                                print('lol?')
+                                #print('lol?')
                                 xgoal = radioTortuga * 4/2 * np.cos(np.arctan(newRecta[0])) + x
                                 ygoal = y
 
@@ -278,25 +327,25 @@ def go_to_goal (xgoal, ygoal):
                 #Regresar a objetivo si ya la otra no esta
                 tempAngleCheck = inRange(oppositeAngle(theta),tortugas[indexCercanas[i]].theta,0.2) or inRange(theta,tortugas[indexCercanas[i]].theta,0.2) or inRange(oppositeAngle(theta),oppositeAngle(tortugas[indexCercanas[i]].theta),0.2)
                 if inRange(abs(miRecta[0]),abs(rectas[0]),0.2) and miRecta[2] == rectas[2] and inRange(anguloTemp,0,0.2): 
-                    print("lol",abs(abs(miRecta[1]) - abs(rectas[1])))
+                    #print("lol",abs(abs(miRecta[1]) - abs(rectas[1])))
                     if abs(abs(miRecta[1]) - abs(rectas[1])) < radioTortuga * 2:
                         
-                        print("Paralelas")
-                        #print(getSign(miRecta[0]))
-                        #print(getSign(rectas[0]))
+                        #print("Paralelas")
+                        ##print(getSign(miRecta[0]))
+                        ##print(getSign(rectas[0]))
                         if getSign(miRecta[0]) == getSign(rectas[0]) and inRange(theta,tortugas[indexCercanas[i]].theta,0.2):
-                            print("Misma dir")
+                            #print("Misma dir")
                             if abs(anguloTemp) < 0.01:
                                 anguloTemp = 0
-                            #print(anguloTemp)
+                            ##print(anguloTemp)
                             if anguloTemp + np.pi/2 > 0  and linear_speed > tortugas[indexCercanas[i]].vel:
-                                print('ve;',tortugas[indexCercanas[i]].vel)
+                                #print('ve;',tortugas[indexCercanas[i]].vel)
                                 linear_speed = tortugas[indexCercanas[i]].vel
                             elif anguloTemp + np.pi/2 < 0  and linear_speed < tortugas[indexCercanas[i]].vel:
                                 linear_speed = tortugas[indexCercanas[i]].vel
-                                print("2")
+                                #print("2")
                         else:
-                            print("Frente a frente")
+                            #print("Frente a frente")
                             '''''
                             if not esquivando:
                                 esquivando = True
@@ -316,8 +365,8 @@ def go_to_goal (xgoal, ygoal):
                                     newX = miRecta[0] * newY + miRecta[1]
                                 coordenadasPaso2 = [xgoal + 1 * radioCerca /4 * np.cos(theta), ygoal + 1 * radioCerca /4 * np.sin(theta)]
                                 coordenadasPaso3 = [newX,newY]
-                                print("coor2",coordenadasPaso2)
-                                print("coor3",coordenadasPaso3)
+                                #print("coor2",coordenadasPaso2)
+                                #print("coor3",coordenadasPaso3)
                             '''
                             if not esquivando:
                                 esquivando = True
@@ -334,16 +383,16 @@ def go_to_goal (xgoal, ygoal):
                                 
                                     if xgoal > 10.5 or ygoal > 10.5 or ygoal < 0.5:
                                         #time.sleep(1.0)
-                                        print(newRecta)
+                                        #print(newRecta)
                                         xgoal = x - radioTortuga * 4/2 * np.cos(np.arctan(newRecta[0]))
                                         ygoal = newRecta[0] * xgoal + newRecta[1]
                                     if xgoal > 10.5 or xgoal < 0.5 or ygoal > 10.5 or ygoal < 0.5:
                                         xgoal = abs(xgoal)
                                         ygoal = abs(ygoal)
-                                    print('actual',x,y,'new',xgoal,ygoal)
+                                    #print('actual',x,y,'new',xgoal,ygoal)
                                     pasoEsquivo = 3
                                 else:
-                                    print('lol?')
+                                    #print('lol?')
                                     xgoal = radioTortuga * 4/2 * np.cos(np.arctan(newRecta[0])) + x
                                     ygoal = y
 
@@ -357,8 +406,15 @@ def go_to_goal (xgoal, ygoal):
                     #(b2 - b1) / (m1 - m2) = x
                     #y = m1 x + b1
                     try:
-                        xChoque = (miRecta[1]-rectas[1])/(rectas[0] - miRecta[0])
-                        yChoque = miRecta[0] * xChoque + miRecta[1]
+                        if miRecta[2]:
+                            xChoque = miRecta[1]
+                            yChoque = rectas[0] * xChoque + rectas[1]
+                        elif rectas[2]:
+                            xChoque = rectas[1]
+                            yChoque = miRecta[0] * xChoque + miRecta[1]
+                        else:
+                            xChoque = (miRecta[1]-rectas[1])/(rectas[0] - miRecta[0])
+                            yChoque = miRecta[0] * xChoque + miRecta[1]
                     except:
                         if inRange(abs(theta),np.pi/2,0.1): #Estoy vertical
                             xChoque = miRecta[1]
@@ -366,36 +422,66 @@ def go_to_goal (xgoal, ygoal):
                         elif  inRange(abs(tortugas[indexCercanas[i]].theta),np.pi/2,0.1): #Esta en vertical
                             xChoque = rectas[1]
                             yChoque = miRecta[0] * xChoque + miRecta[1]
-                    print("No paralelas")
-                        
+                    #print("No paralelas")
                     
+                    #print("newTortuga",i)
+                    #print("yo",[x,y,theta])
+                    #print("ella",[tortugas[indexCercanas[i]].x,tortugas[indexCercanas[i]].y,tortugas[indexCercanas[i]].theta])
+                    #print("mirecta",miRecta)
+                    #print("surecta",rectas)
+                    #print("Choque",xChoque,yChoque)
+                    #print("mioposite",oppositeAngle(theta))
+        
                     if np.arctan2(yChoque - y,xChoque - x) - theta + np.pi < 0:
-                        print("Atras de mi")
+                        #print("Atras de mi")
                         linear_speed = linear_speed * 3 /2
                     elif np.arctan2(yChoque - tortugas[indexCercanas[i]].y,xChoque - tortugas[indexCercanas[i]].x) - tortugas[indexCercanas[i]].theta + np.pi < 0:
-                        print("Atras de ella")
+                        #print("Atras de ella")
                         linear_speed = linear_speed / 2
                     else:
                         
                         distPuntoOtra = np.sqrt((xChoque - tortugas[indexCercanas[i]].x)**2 +(yChoque - tortugas[indexCercanas[i]].y)**2)
                         distPuntoMio = np.sqrt((xChoque - x)**2 +(yChoque - y)**2)
-                        if tortugas[indexCercanas[i]].vel != 0:
-                            tOtra = distPuntoOtra / tortugas[indexCercanas[i]].vel
-                        else:
-                            tOtra = 100000
-                        tMia = distPuntoMio / linear_speed
-                        if tOtra <= tMia:
-                            print("La otra llega antes")
-                            linear_speed = 0
-                        elif tMia < tOtra:
-                            print("LLego antes")
-                            linear_speed = 0
-                            #linear_speed =+ radioCerca / distancias[indexCercanas[i]] * 10
+                        if distPuntoMio < radioCerca:
+                            #print("LLego antes")
+                            if tortugas[indexCercanas[i]].vel != 0:
+                                tOtra = distPuntoOtra / tortugas[indexCercanas[i]].vel
+                            else:
+                                tOtra = 100000
+                            tMia = distPuntoMio / linear_speed
+                            '''
+                            if tOtra <= tMia:
+                                tChoque = tOtra
+                                otraPos = 
+                            else:
+                                tChoque = tMia
+                            '''
+                            if tOtra <= tMia:
+                                #print("La otra llega antes",distancias[i])
+                                if distancias[i] < radioTortuga*1.5:
+                                    linear_speed = -linear_speed 
+                                else:
+                                    linear_speed = 0
+                            elif tMia < tOtra:
+                                
+                                
+                                if distancias[i] < radioTortuga*1.5:
+                                    otraAtras = False
+                                    for p in range(len(distancias)):
+                                        if p != i:
+                                            angleOther = np.arctan2((tortugas[indexCercanas[i]].y - y),(tortugas[indexCercanas[i]].x - x)) -theta + np.pi/2
+                                            otraAtras = otraAtras or angleOther < 0
+                                    if otraAtras:
+                                        linear_speed = 0
+                                    else:
+                                        linear_speed = -linear_speed /2
+                                else:
+                                    linear_speed = 0
+                                #linear_speed =+ radioCerca / distancias[indexCercanas[i]] * 10
                 
 
             '''
-            linear_speed = -1/5 * linear_speed
-            angular_speed = 0.0
+            
             
             contansteente calcular vel todas tortugas ok
             calcular quienes estan en mi radio ok
@@ -434,50 +520,31 @@ def go_to_goal (xgoal, ygoal):
             0 -pi/2  calcular su vel
             '''
 
-
-            '''
-            if not esquivando:
-                lastCoordenada = [xgoal,ygoal]
-                #Definir si el otro va en la misma direccion pero otro sentido
-                tolerance = 0.1
-                print('theta',theta)
-                print('theta2',theta2)
-                print("opTheta", oppositeAngle(theta))
-                if inRange(theta,oppositeAngle(theta)):
-                    #definir vertical horizontal o digonal
-                    #Vertical
-                    print("Ruta col")
-                    esquivando = True
-                    
-                    if inRange(np.pi/2,theta):
-                        print("pi/2") #vel angular
-                        xgoal = x 
-                        ygoal = y + 2 *abs(y2-y)/5
-                        coordenadasPaso2 = [xgoal+1, ygoal+1]
-                        coordenadasPaso3 = [x+1,y + 2 *abs(y2-y)/6 + 1]
-                    elif inRange(-np.pi /2,theta):
-                        print("-pi/2") #vel angular
-                        xgoal = x + 1.5
-                        ygoal = y - 2 *abs(y2-y)/5
-                        coordenadasPaso2 = [xgoal, ygoal - 1]
-                        coordenadasPaso3 = [x,y - 2 *abs(y2-y)/5 - 3]
-                    #Horizontal  checar
-                    elif inRange(0,theta):
-                        xgoal = x + 2 *abs(x2-x)/5
-                        ygoal = y + 1.5
-                        coordenadasPaso2 = [xgoal + 1, ygoal]
-                        coordenadasPaso3 = [x+ 2 *abs(x2-x)/5 + 3,y]
-                    elif inRange(np.pi,theta) or inRange(-np.pi,theta):
-                        xgoal = x - 2 *abs(x2-x)/5
-                        ygoal = y + 1.5
-                        coordenadasPaso2 = [xgoal - 1, ygoal]
-                        coordenadasPaso3 = [x - 2 *abs(x2-x)/5 - 3,y]
-            '''
+        if xgoal < borderLimit:
+            xgoal = borderLimit
+        elif xgoal > 11-borderLimit:
+            xgoal = 11-borderLimit
+        if xgoal < borderLimit:
+            ygoal = borderLimit
+        elif xgoal > 11-borderLimit:
+            ygoal = 11-borderLimit
+        if x < 0.25:
+            if abs(theta) > np.pi/2:
+                linear_speed = 0
+        elif x > 10.75:
+            if abs(theta) < np.pi/2:
+                linear_speed = 0
+        if y < 0.25:
+            if theta < 0:
+                linear_speed = 0
+        elif y > 10.75:
+            if theta > 0:
+                linear_speed = 0
         velocity_message.linear.x = linear_speed
         velocity_message.angular.z = angular_speed
         velocity_publisher.publish(velocity_message)
         
-        #print ('x=', x, 'y=', y)
+        ##print ('x=', x, 'y=', y)
         pastTheta = desired_angle_goal
         if seguida:
             if (distance < 0.1):
@@ -487,8 +554,8 @@ def go_to_goal (xgoal, ygoal):
                 if (distance < 0.01):
                     break
             else:
-                if (distance < 0.1):
-                    print("arrived")
+                if (distance < 0.2):
+                    #print("arrived")
                     
                     if pasoEsquivo == 0:
                         #moverse en y nada mas
@@ -498,15 +565,20 @@ def go_to_goal (xgoal, ygoal):
                     elif pasoEsquivo == 1:
                         xgoal = coordenadasPaso3[0]
                         ygoal = coordenadasPaso3[1]
+                        
                         pasoEsquivo += 1
                     else:
                         xgoal = goal[0]
                         ygoal = goal[1]
                         pasoEsquivo = 0  
                         esquivando = False
+                    orientate(xgoal,ygoal)
                     '''
                     
                     '''
+    velocity_message.linear.x = 0.0
+    velocity_message.angular.z = 0.0
+    velocity_publisher.publish(velocity_message)
                     
 def stop():
     print("Esquivator finito")
@@ -522,14 +594,15 @@ if __name__ == '__main__':
         position_topic = "/turtle1/pose"
         pose_subscriber = rospy.Subscriber(position_topic, Pose, poseCallback)
         tortugas.append(turtleWatcher('turtle2'))
+        tortugas.append(turtleWatcher('turtle3'))
         
         time.sleep(2)     
         delayTime = 1.0
         initPos = [5.5,1.0]
-        pos = [[10.0,10.0]]
+        pos = [[10.0,3.0],[1.0,7.0],[9.0,10.0]]
 
         for i in range(len(pos)):
-            print(pos[i][0],"\t",pos[i][1])
+            #print(pos[i][0],"\t",pos[i][1])
             orientate(pos[i][0],pos[i][1])
             time.sleep(1.0)
             go_to_goal(pos[i][0],pos[i][1])

@@ -2,18 +2,20 @@
 	
 	<node pkg="turtlesim" type="turtlesim_node" name="el_turlesim" />
 	<node pkg="rosservice" type="rosservice" name="teleop_turtle1" 
-		  args="call /turtle1/teleport_absolute 1.0 1.0 0.78539816339"/>	
+		  args="call /turtle1/teleport_absolute 5.5 1.0 1.57079632679"/>	
     <node pkg="rosservice" type="rosservice" name="load_turtle2" 
-		args="call /spawn 2.0 2.0 0.78539816339 'turtle2'"/>	
+		args="call /spawn 5.5 5.5 0 'turtle2'"/>	
+        <node pkg="rosservice" type="rosservice" name="load_turtle3" 
+		args="call /spawn 4.0 8.5 0 'turtle3'"/>	
     <node pkg="rosservice" type="rosservice" name="clear" 
         args="call /clear"/>
     <node pkg="rosservice" type="rosservice" name="teleop_turtle1_2" 
-        args="call /turtle1/teleport_absolute 1.0 1.0 0.78539816339"/>
+        args="call /turtle1/teleport_absolute  5.5 1.0 1.57079632679"/>
     <node pkg="rosservice" type="rosservice" name="clear_2" 
         args="call /clear"/>
     <node pkg="rosservice" type="rosservice" name="clear_3_el_final" 
          args="call /clear"/>
 
 	<node pkg="esquivator" type="esq7.py" name="el_gran_esquivador" />
-	<node pkg="esquivator" type="estorbo2.py" name="el_estorbator" />
+	
 </launch>
